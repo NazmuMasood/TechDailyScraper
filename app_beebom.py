@@ -7,46 +7,10 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import sessionmaker
 from bs4 import BeautifulSoup
 import requests
-
-Base = declarative_base()
-
-### Owner model
-class Owner(Base):
-    __tablename__ = 'techdaily_owner'
-    # id = Column(Integer, Sequence('owner_id_seq'), primary_key=True)
-    id = Column(Integer, primary_key=True)
-    name = Column(String(30), nullable=False)
-    url = Column(String(100), nullable=False, unique=True)
-    created_at = Column(DateTime(timezone=True), default=func.now())
-    updated_at = Column(DateTime(timezone=True), nullable=True, onupdate=func.now())
-    # created_at = Column(DateTime(timezone=True), server_default=func.now())
-    # updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-
-    def __repr__(self):
-        return "<Owner(id='%d', name='%s', url='%s', created_at='%s', updated_at='%s')>" % ( 
-            self.id, self.name, self.url, self.created_at, self.updated_at)
-
-### Content model
-class Content(Base):
-    __tablename__ = 'techdaily_content'
-
-    id = Column(Integer, primary_key=True)
-    owner_id = Column(Integer, ForeignKey('techdaily_owner.id', ondelete="CASCADE"))
-    url =  Column(String(300), nullable=False, unique=True)
-    title = Column(String(200), nullable=False)
-    author = Column(String(200), nullable=True)
-    pub_date = Column(String(50), nullable=True)
-    img_url = Column(String(200), nullable=True)   
-    created_at = Column(DateTime(timezone=True), default=func.now())
-    updated_at = Column(DateTime(timezone=True), nullable=True, onupdate=func.now())
-    
-    def __repr__(self):
-        return "<Content(id='%s', owner_id='%s', url='%s', title='%s', author='%s', pub_date='%s', img_url='%s', created_at='%s', updated_at='%s')>" % ( 
-            self.id, self.owner_id, self.url, self.title, self.author, self.pub_date, self.img_url, self.created_at, self.updated_at)
+from models import Owner, Content
 
 ### Db connection
-engine = create_engine('mysql+mysqldb://root:@127.0.0.1:3306/techdaily', echo=True)
-# Base.metadata.create_all(bind=engine)
+engine = create_engine('mysql+mysqldb://root:@127.0.0.1:3306/techdaily', connect_args={"init_command": "SET SESSION time_zone='+00:00'"}, echo=True)
 
 ### Creating session to make db queries
 Session = sessionmaker(bind=engine)
@@ -115,6 +79,7 @@ for content_title, content_url, content_img_url in zip(
     content.url = content_url
     content.img_url = content_img_url
     # content.pub_date = content_pub_date
+    print(Content.__repr__)
     session.add(content)
 
 session.commit()
