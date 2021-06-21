@@ -9,7 +9,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 import os
-import time
+import time, datetime
 
 #Setting up options for the driver
 option = Options()
@@ -47,8 +47,9 @@ print('Webpage title: '+driver.title)
 #       author a            -               <a href={authorLink} > {author} </a>
 #       date span           -           <span class=td-post-date >
 #       date time           -               <time class=entry-date updated td-module-date datetime="{some datetime ago}">
+#       loading more div    -   <div class=td-loader-gif td-loader-infinite td-loader-animation-mid
 
-most_recent_url = "https://beebom.com/battlegrounds-mobile-india-sending-data-to-chinese-servers/" 
+most_recent_url = "https://beebom.com/us-drops-trump-orders-to-ban-tiktok-wechat/" 
 
 try:
     # Navigating to the story 'Settings' button on the Create Facebook Stories page 
@@ -63,28 +64,81 @@ try:
         print("'Content' rows found!")
         print('contents[] length: '+str(len(contentRowDivs)))
 
-        for contentRowDiv in contentRowDivs:
-            # image url
-            imageImg = contentRowDiv.find_element_by_class_name('entry-thumb')
-            print(imageImg.get_attribute('src'))
+        # maxNoOfTimesToScroll = 5
+        urlFound = False
 
-            # title
-            titleH3 = contentRowDiv.find_element_by_class_name('entry-title')
-            titleA = titleH3.find_element_by_tag_name('a')
-            print(titleA.text)
+        scrollCount = 0
+        while(urlFound is False):
+            # if(scrollCount>maxNoOfTimesToScroll):
+            #     raise Exception('Scrolling limit reached');
+            targetElem = driver.find_elements_by_xpath(".//a[contains(@href,'"+most_recent_url+"')]")
+            if(len(targetElem)>0):
+                print("most recent url found in page")
+                urlFound = True
+                break
+            else:
+                # -------- Scroll to / Move focus to bottom content row on page
+                # --------
+                lastContentRow = contentRowDivs[len(contentRowDivs)-1] 
+                ActionChains(driver).move_to_element(lastContentRow).perform()
+                ActionChains(driver).send_keys(Keys.TAB).perform()
+                scrollCount += 1
+                print('scroll count: '+str(scrollCount))
+                # -------- Check if loading more div is still present i.e. more content is still loading
+                # --------
+                loadingMoreDivPresent = True
+                loadingMoreDivClass = "//div[@class='td-loader-gif td-loader-infinite td-loader-animation-mid']"
+                endTime = datetime.datetime.now() + datetime.timedelta(seconds=5)
+                while loadingMoreDivPresent:
+                    if datetime.datetime.now() >= endTime:
+                        raise Exception("Error in 'loading more'")
+                    loadingMoreDiv = driver.find_elements_by_xpath(loadingMoreDivClass)
+                    if(len(loadingMoreDiv)==0):
+                        loadingMoreDivPresent = False
+                # -------- More contents have been loaded 
+                # --------
+                contentRowDivClass = "//div[@class='td-ss-main-content']//div[@class='td_module_10 td_module_wrap td-animation-stack bee-list']"
+                # contentRowDivs = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.XPATH, contentRowDivClass)))
+                prevContentRowsCount = len(contentRowDivs)
+                contentRowDivs = driver.find_elements_by_xpath(contentRowDivClass)
+                if(len(contentRowDivs)==prevContentRowsCount):
+                    scrollCount -= 1
+                else:
+                    print("More 'Content' rows found!")
+                    print('contents[] new length: '+str(len(contentRowDivs)))
 
-            # url
-            print(titleA.get_attribute('href'))
 
-            # author
-            authorSpan = contentRowDiv.find_element_by_class_name('td-post-author-name')
-            authorA = authorSpan.find_element_by_tag_name('a')
-            print(authorA.text)
 
-            # pub_date
-            pub_dateSpan = contentRowDiv.find_element_by_class_name('td-post-date')
-            pub_dateTime = pub_dateSpan.find_element_by_tag_name('time')
-            print(pub_dateTime.get_attribute('datetime')+'\n')
+        # targetElem = driver.find_elements_by_xpath(".//a[contains(@href,'"+most_recent_url+"')]")
+        # if(len(targetElem)>0):
+        #     print("most recent url found in page")
+
+        # print(len(contentRowDivs)-1)
+        # lastContentRow = contentRowDivs[len(contentRowDivs)-1] 
+        # ActionChains(driver).move_to_element(lastContentRow).perform()
+
+        # for contentRowDiv in contentRowDivs:
+        #     # image url
+        #     imageImg = contentRowDiv.find_element_by_class_name('entry-thumb')
+        #     print(imageImg.get_attribute('src'))
+
+        #     # title
+        #     titleH3 = contentRowDiv.find_element_by_class_name('entry-title')
+        #     titleA = titleH3.find_element_by_tag_name('a')
+        #     print(titleA.text)
+
+        #     # url
+        #     print(titleA.get_attribute('href'))
+
+        #     # author
+        #     authorSpan = contentRowDiv.find_element_by_class_name('td-post-author-name')
+        #     authorA = authorSpan.find_element_by_tag_name('a')
+        #     print(authorA.text)
+
+        #     # pub_date
+        #     pub_dateSpan = contentRowDiv.find_element_by_class_name('td-post-date')
+        #     pub_dateTime = pub_dateSpan.find_element_by_tag_name('time')
+        #     print(pub_dateTime.get_attribute('datetime')+'\n')
 
 
     except TimeoutException:
