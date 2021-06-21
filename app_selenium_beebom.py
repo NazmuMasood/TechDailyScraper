@@ -19,7 +19,7 @@ from selenium.common.exceptions import TimeoutException
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 import os
-import time
+import time, datetime
 
 
 ### Db connection
@@ -30,10 +30,10 @@ session = Session()
 
 statement = 'SELECT techdaily_content.url FROM techdaily_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 1'
 results = session.execute(statement).scalars().all()
-beebom_recent_url_in_db = 'null'
+most_recent_url = 'null'
 if len(results)>0:
-    beebom_recent_url_in_db = results[0]
-print('---------Beebom last record : '+beebom_recent_url_in_db)
+    most_recent_url = results[0]
+print('---------Beebom last record : '+most_recent_url)
 
 
 #Setting up options for the driver
@@ -81,8 +81,54 @@ try:
         contentRowDivs = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.XPATH, contentRowDivClass)))
         # print("'Content' rows found!")
         print('contents[] length: '+str(len(contentRowDivs)))
+
+        # maxNoOfTimesToScroll = 5
+        urlFound = False
+
+        scrollCount = 0
+        while(urlFound is False):
+            # if(scrollCount>maxNoOfTimesToScroll):
+            #     raise Exception('Scrolling limit reached');
+            targetElem = driver.find_elements_by_xpath(".//a[contains(@href,'"+most_recent_url+"')]")
+            if(len(targetElem)>0):
+                print("most recent url found in page")
+                urlFound = True
+                break
+            else:
+                # -------- Scroll to / Move focus to bottom content row on page
+                # --------
+                lastContentRow = contentRowDivs[len(contentRowDivs)-1] 
+                ActionChains(driver).move_to_element(lastContentRow).perform()
+                ActionChains(driver).send_keys(Keys.TAB).perform()
+                scrollCount += 1
+                print('scroll count: '+str(scrollCount))
+                # -------- Check if loading more div is still present i.e. more content is still loading
+                # --------
+                loadingMoreDivPresent = True
+                loadingMoreDivClass = "//div[@class='td-loader-gif td-loader-infinite td-loader-animation-mid']"
+                endTime = datetime.datetime.now() + datetime.timedelta(seconds=5)
+                while loadingMoreDivPresent:
+                    if datetime.datetime.now() >= endTime:
+                        raise Exception("Error in 'loading more'")
+                    loadingMoreDiv = driver.find_elements_by_xpath(loadingMoreDivClass)
+                    if(len(loadingMoreDiv)==0):
+                        loadingMoreDivPresent = False
+                # -------- More contents have been loaded 
+                # --------
+                contentRowDivClass = "//div[@class='td-ss-main-content']//div[@class='td_module_10 td_module_wrap td-animation-stack bee-list']"
+                # contentRowDivs = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.XPATH, contentRowDivClass)))
+                prevContentRowsCount = len(contentRowDivs)
+                contentRowDivs = driver.find_elements_by_xpath(contentRowDivClass)
+                if(len(contentRowDivs)==prevContentRowsCount):
+                    scrollCount -= 1
+                else:
+                    print("More 'Content' rows found!")
+                    print('contents[] new length: '+str(len(contentRowDivs)))
         
         for contentRowDiv in contentRowDivs:
+            if(contentRowDiv.find_element_by_class_name('entry-title').find_element_by_tag_name('a').get_attribute('href')==most_recent_url):
+                break
+
             # image url
             imageImg = contentRowDiv.find_element_by_class_name('entry-thumb')
             print(imageImg.get_attribute('src'))
