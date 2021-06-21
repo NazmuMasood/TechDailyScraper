@@ -49,7 +49,7 @@ print('Webpage title: '+driver.title)
 #       date time           -               <time class=entry-date updated td-module-date datetime="{some datetime ago}">
 #       loading more div    -   <div class=td-loader-gif td-loader-infinite td-loader-animation-mid
 
-most_recent_url = "https://beebom.com/us-drops-trump-orders-to-ban-tiktok-wechat/" 
+most_recent_url = "https://beebom.com/battlegrounds-mobile-india-beta-live/" 
 
 try:
     # Navigating to the story 'Settings' button on the Create Facebook Stories page 
@@ -107,38 +107,31 @@ try:
                     print("More 'Content' rows found!")
                     print('contents[] new length: '+str(len(contentRowDivs)))
 
+        for contentRowDiv in contentRowDivs:
+            if(contentRowDiv.find_element_by_class_name('entry-title').find_element_by_tag_name('a').get_attribute('href')==most_recent_url):
+                break
 
+            # image url
+            imageImg = contentRowDiv.find_element_by_class_name('entry-thumb')
+            print(imageImg.get_attribute('src'))
 
-        # targetElem = driver.find_elements_by_xpath(".//a[contains(@href,'"+most_recent_url+"')]")
-        # if(len(targetElem)>0):
-        #     print("most recent url found in page")
+            # title
+            titleH3 = contentRowDiv.find_element_by_class_name('entry-title')
+            titleA = titleH3.find_element_by_tag_name('a')
+            print(titleA.text)
 
-        # print(len(contentRowDivs)-1)
-        # lastContentRow = contentRowDivs[len(contentRowDivs)-1] 
-        # ActionChains(driver).move_to_element(lastContentRow).perform()
+            # url
+            print(titleA.get_attribute('href'))
 
-        # for contentRowDiv in contentRowDivs:
-        #     # image url
-        #     imageImg = contentRowDiv.find_element_by_class_name('entry-thumb')
-        #     print(imageImg.get_attribute('src'))
+            # author
+            authorSpan = contentRowDiv.find_element_by_class_name('td-post-author-name')
+            authorA = authorSpan.find_element_by_tag_name('a')
+            print(authorA.text)
 
-        #     # title
-        #     titleH3 = contentRowDiv.find_element_by_class_name('entry-title')
-        #     titleA = titleH3.find_element_by_tag_name('a')
-        #     print(titleA.text)
-
-        #     # url
-        #     print(titleA.get_attribute('href'))
-
-        #     # author
-        #     authorSpan = contentRowDiv.find_element_by_class_name('td-post-author-name')
-        #     authorA = authorSpan.find_element_by_tag_name('a')
-        #     print(authorA.text)
-
-        #     # pub_date
-        #     pub_dateSpan = contentRowDiv.find_element_by_class_name('td-post-date')
-        #     pub_dateTime = pub_dateSpan.find_element_by_tag_name('time')
-        #     print(pub_dateTime.get_attribute('datetime')+'\n')
+            # pub_date
+            pub_dateSpan = contentRowDiv.find_element_by_class_name('td-post-date')
+            pub_dateTime = pub_dateSpan.find_element_by_tag_name('time')
+            print(pub_dateTime.get_attribute('datetime')+'\n')
 
 
     except TimeoutException:
