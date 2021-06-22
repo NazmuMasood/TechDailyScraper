@@ -82,13 +82,26 @@ try:
         # print("'Content' rows found!")
         print('contents[] length: '+str(len(contentRowDivs)))
 
-        # maxNoOfTimesToScroll = 5
+        maxNoOfRecentUrlToCheck = 2
+        maxNoOfTimesToScroll = 3
         urlFound = False
 
+        recentUrlChkCount = 1
         scrollCount = 0
         while(urlFound is False):
-            # if(scrollCount>maxNoOfTimesToScroll):
-            #     raise Exception('Scrolling limit reached');
+            if(scrollCount==maxNoOfTimesToScroll):
+                # raise Exception('Scrolling limit reached');
+                if(recentUrlChkCount==maxNoOfRecentUrlToCheck):
+                    raise Exception("'Recent Url Check' limit reached");
+                statement = 'DELETE FROM techdaily_content WHERE url = :val'
+                session.execute(statement, {'val':most_recent_url})
+                print('Deleted the orphan entry from db')
+                statement = 'SELECT techdaily_content.url FROM techdaily_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 1'
+                results = session.execute(statement).scalars().all()
+                most_recent_url = results[0]
+                print('Checking for another url: '+most_recent_url)
+                scrollCount = 0
+                recentUrlChkCount += 1
             targetElem = driver.find_elements_by_xpath(".//a[contains(@href,'"+most_recent_url+"')]")
             if(len(targetElem)>0):
                 print("most recent url found in page")
@@ -99,7 +112,6 @@ try:
                 # --------
                 lastContentRow = contentRowDivs[len(contentRowDivs)-1] 
                 ActionChains(driver).move_to_element(lastContentRow).perform()
-                ActionChains(driver).send_keys(Keys.TAB).perform()
                 scrollCount += 1
                 print('scroll count: '+str(scrollCount))
                 # -------- Check if loading more div is still present i.e. more content is still loading
