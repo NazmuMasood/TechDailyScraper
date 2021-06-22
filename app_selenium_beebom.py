@@ -28,12 +28,17 @@ engine = create_engine('mysql+mysqldb://root:@127.0.0.1:3306/techdaily', connect
 Session = sessionmaker(bind=engine)
 session = Session()
 
+freshStart = False
 statement = 'SELECT techdaily_content.url FROM techdaily_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 1'
 results = session.execute(statement).scalars().all()
 most_recent_url = 'null'
 if len(results)>0:
     most_recent_url = results[0]
-print('---------Beebom last record : '+most_recent_url)
+    print('---------Beebom last record : '+most_recent_url)
+else:
+    freshStart = True
+    print('Fresh Start!')
+
 
 
 #Setting up options for the driver
@@ -85,6 +90,8 @@ try:
         maxNoOfRecentUrlToCheck = 2
         maxNoOfTimesToScroll = 3
         urlFound = False
+        if freshStart:
+            urlFound = True
 
         recentUrlChkCount = 1
         scrollCount = 0
