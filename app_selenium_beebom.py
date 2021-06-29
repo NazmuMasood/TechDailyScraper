@@ -7,7 +7,6 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import sessionmaker
 from bs4 import BeautifulSoup
 import requests
-from models import Owner, Content
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common import by
@@ -20,16 +19,16 @@ from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 import os
 import time, datetime
+from models import Owner, Content
+from connection import engine
 
 
-### Db connection
-engine = create_engine('mysql+mysqldb://root:@127.0.0.1:3306/techdaily', connect_args={"init_command": "SET SESSION time_zone='+00:00'"}, echo=True)
 ### Creating session to make db queries
 Session = sessionmaker(bind=engine)
 session = Session()
 
 freshStart = False
-statement = 'SELECT techdaily_content.url FROM techdaily_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 1'
+statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 1'
 results = session.execute(statement).scalars().all()
 most_recent_url = 'null'
 if len(results)>0:
@@ -87,8 +86,8 @@ try:
         # print("'Content' rows found!")
         print('contents[] length: '+str(len(contentRowDivs)))
 
-        maxNoOfRecentUrlToCheck = 2
-        maxNoOfTimesToScroll = 3
+        maxNoOfRecentUrlToCheck = 10
+        maxNoOfTimesToScroll = 10
         urlFound = False
         if freshStart:
             urlFound = True
@@ -100,10 +99,10 @@ try:
                 # raise Exception('Scrolling limit reached');
                 if(recentUrlChkCount==maxNoOfRecentUrlToCheck):
                     raise Exception("'Recent Url Check' limit reached");
-                statement = 'DELETE FROM techdaily_content WHERE url = :val'
+                statement = 'DELETE FROM contents_content WHERE url = :val'
                 session.execute(statement, {'val':most_recent_url})
                 print('Deleted the orphan entry from db')
-                statement = 'SELECT techdaily_content.url FROM techdaily_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 1'
+                statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 1'
                 results = session.execute(statement).scalars().all()
                 most_recent_url = results[0]
                 print('Checking for another url: '+most_recent_url)

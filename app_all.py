@@ -7,6 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from bs4 import BeautifulSoup
 import requests
 from models import Owner, Content
+from connection import engine
 
 owner_names = ['Cnet','Beebom', 'Android Authority']
 owner_urls = ['https://www.cnet.com', 'https://beebom.com', 'https://www.androidauthority.com']
@@ -44,10 +45,6 @@ print('content_titles length: '+str(len(content_titles)))
 
 # scraping android authority
 # ......
-
-### Db connection
-engine = create_engine('mysql+mysqldb://root:@127.0.0.1:3306/techdaily', connect_args={"init_command": "SET SESSION time_zone='+00:00'"}, echo=True)
-# Base.metadata.create_all(bind=engine)
 
 ### Creating session to make db queries
 Session = sessionmaker(bind=engine)

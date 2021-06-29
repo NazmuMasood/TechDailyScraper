@@ -8,10 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from bs4 import BeautifulSoup
 import requests
 from models import Owner, Content
-
-### Db connection
-engine = create_engine('mysql+mysqldb://root:@127.0.0.1:3306/techdaily', connect_args={"init_command": "SET SESSION time_zone='+00:00'"}, echo=True)
-# Base.metadata.create_all(bind=engine)
+from connection import engine
 
 ### Creating session to make db queries
 Session = sessionmaker(bind=engine)

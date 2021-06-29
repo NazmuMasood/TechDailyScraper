@@ -8,9 +8,7 @@ from sqlalchemy.orm import sessionmaker
 from bs4 import BeautifulSoup
 import requests
 from models import Owner, Content
-
-### Db connection
-engine = create_engine('mysql+mysqldb://root:@127.0.0.1:3306/techdaily', connect_args={"init_command": "SET SESSION time_zone='+00:00'"}, echo=True)
+from connection import engine
 
 ### Creating session to make db queries
 Session = sessionmaker(bind=engine)
@@ -18,7 +16,7 @@ session = Session()
 
 ### ----- session code for that particular session goes here -----
 
-statement = 'SELECT techdaily_content.url FROM techdaily_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 1'
+statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 1'
 results = session.execute(statement).scalars().all()
 beebom_recent_url_in_db = 'null'
 if len(results)>0:

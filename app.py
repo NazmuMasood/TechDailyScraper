@@ -6,9 +6,11 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import sessionmaker
 from bs4 import BeautifulSoup
 from models import Owner, Content
+from connection import engine
 
 ### Db connection
-engine = create_engine('mysql+mysqldb://root:@127.0.0.1:3306/techdaily', connect_args={"init_command": "SET SESSION time_zone='+00:00'"}, echo=True)
+# engine = create_engine('mysql+mysqldb://root:@127.0.0.1:3306/techdaily', connect_args={"init_command": "SET SESSION time_zone='+00:00'"}, echo=True)
+# engine = create_engine('postgresql+psycopg2://postgres:@127.0.0.1:5432/techdaily', connect_args={"options": "-c timezone=utc"})
 # Base.metadata.create_all(bind=engine)
 
 ### Creating session to make db queries

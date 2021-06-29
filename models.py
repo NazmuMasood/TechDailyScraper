@@ -8,7 +8,7 @@ Base = declarative_base()
 
 ### Owner model
 class Owner(Base):
-    __tablename__ = 'techdaily_owner'
+    __tablename__ = 'owners_owner'
     # id = Column(Integer, Sequence('owner_id_seq'), primary_key=True)
     id = Column(Integer, primary_key=True)
     name = Column(String(30), nullable=False)
@@ -24,10 +24,10 @@ class Owner(Base):
 
 ### Content model
 class Content(Base):
-    __tablename__ = 'techdaily_content'
+    __tablename__ = 'contents_content'
 
     id = Column(Integer, primary_key=True)
-    owner_id = Column(Integer, ForeignKey('techdaily_owner.id', ondelete="CASCADE"))
+    owner_id = Column(Integer, ForeignKey('owners_owner.id', ondelete="CASCADE"))
     url =  Column(String(300), nullable=False, unique=True)
     title = Column(String(200), nullable=False)
     author = Column(String(200), nullable=True)
