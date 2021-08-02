@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, select
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.sql.expression import null
+from sqlalchemy.sql.expression import false, null
 from sqlalchemy.sql.schema import Column, ForeignKey, Sequence
 from sqlalchemy.sql.sqltypes import DateTime, Integer, String
 from sqlalchemy.sql import func
@@ -27,7 +27,7 @@ session = Session()
 freshStart = False
 statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 1 ORDER BY id DESC LIMIT 15'
 results = session.execute(statement).scalars().all()
-print('results length '+str(len(results)))
+print("Previous records' results[] length: "+str(len(results)))
 most_recent_url = 'null'
 if len(results)>0:
     most_recent_url = results[0]
@@ -144,24 +144,46 @@ try:
 except TimeoutException:
     print("No 'newsColumnDiv' present on 'news' page")
 
+print("Total "+str(len(content_urls))+" new content(s) found\n")
+
+# -- Getting the actual 'pub_date' datetime from each content's url
+if len(content_urls)>0:
+    print("Fetching 'pub_date' datetime from each content's url...")
+
+fetchedAllDatetimes = True
+for content_url, index in zip(content_urls, range(len(content_pub_dates))):
+    driver.get(content_url)
+    print('Webpage title: '+driver.title)
+
+    try:
+        pub_dateDiv = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@class='c-assetAuthor_date']")))
+        pub_dateDatetime = pub_dateDiv.find_element_by_tag_name('time').get_attribute('datetime')
+        print("'pub_date' datetime found! : "+pub_dateDatetime+'\n')
+        content_pub_dates[index] = pub_dateDatetime
+
+    except TimeoutException:
+        print("No 'pub_date' datetime present on current content_url")
+        fetchedAllDatetimes = false
+        break
+
 driver.quit()
 
-print("Total "+str(len(content_urls))+" new content(s) found\n")
 # --------------------------------------------
 # -------------------------------------------------
 # --------------------------------------------
 
-for content_author, content_pub_date, content_title, content_url, content_img_url in zip(
-        reversed(content_authors), reversed(content_pub_dates), reversed(content_titles), reversed(content_urls), reversed(content_img_urls)):
-    content = Content()
-    content.owner_id = owner_id
-    content.title = content_title
-    content.author = content_author
-    content.url = content_url
-    content.img_url = content_img_url
-    content.pub_date = content_pub_date
-    # print(Content.__repr__)
-    session.add(content)
+if fetchedAllDatetimes:
+    for content_author, content_pub_date, content_title, content_url, content_img_url in zip(
+            reversed(content_authors), reversed(content_pub_dates), reversed(content_titles), reversed(content_urls), reversed(content_img_urls)):
+        content = Content()
+        content.owner_id = owner_id
+        content.title = content_title
+        content.author = content_author
+        content.url = content_url
+        content.img_url = content_img_url
+        content.pub_date = content_pub_date
+        # print(Content.__repr__)
+        session.add(content)
 
-session.commit()
+    session.commit()
 session.close()
