@@ -7,7 +7,7 @@ from sqlalchemy.sql import func
 from sqlalchemy.orm import sessionmaker
 from bs4 import BeautifulSoup
 import requests
-from models import Owner, Content
+from models import Content
 from connection import engine
 
 ### Creating session to make db queries
