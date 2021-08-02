@@ -27,7 +27,7 @@ session = Session()
 freshStart = False
 statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 20'
 results = session.execute(statement).scalars().all()
-print('results length '+str(len(results)))
+print("Previous records' results[] length: "+str(len(results)))
 most_recent_url = 'null'
 if len(results)>0:
     most_recent_url = results[0]
