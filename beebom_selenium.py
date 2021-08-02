@@ -5,8 +5,6 @@ from sqlalchemy.sql.schema import Column, ForeignKey, Sequence
 from sqlalchemy.sql.sqltypes import DateTime, Integer, String
 from sqlalchemy.sql import func
 from sqlalchemy.orm import sessionmaker
-from bs4 import BeautifulSoup
-import requests
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common import by
@@ -35,7 +33,7 @@ if len(results)>0:
     print('\n---------Beebom last record : '+most_recent_url)
 else:
     freshStart = True
-    print('Fresh Start!')
+    print('\nFresh Start!')
 
 
 #Setting up options for the driver
