@@ -74,13 +74,13 @@ driver.get(root_url+"/category/news")
 print('Webpage title: '+driver.title)
 
 try:
-    # Navigating to the story 'Settings' button on the Create Facebook Stories page 
+    # Navigating to the 'Latest News' column
     newsColumnDivClass = "//div[@class='td-ss-main-content']"
     newsColumnDiv = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, newsColumnDivClass)))
     # print("'Latest News' column found!")
         
     try:
-        # Navigating to the story 'Settings' button on the Create Facebook Stories page 
+        # Getting all the 'article/content' rows in 'latest news' column
         contentRowDivClass = "//div[@class='td-ss-main-content']//div[@class='td_module_10 td_module_wrap td-animation-stack bee-list']"
         contentRowDivs = WebDriverWait(driver, 10).until(EC.presence_of_all_elements_located((By.XPATH, contentRowDivClass)))
         # print("'Content' rows found!")

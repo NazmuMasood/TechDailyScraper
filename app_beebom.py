@@ -42,7 +42,7 @@ content_pub_dates = []
 
 beebom = 1 #choosing beebom
 owner_id = owner_ids[beebom] 
-html_text = requests.get(owner_urls[beebom]).text
+html_text = requests.get(owner_urls[beebom]+"/category/news").text
 soup = BeautifulSoup(html_text, 'lxml')
 titles = soup.find_all('div',class_ = 'td_module_10 td_module_wrap td-animation-stack bee-list')
 for title in titles:
