@@ -25,8 +25,9 @@ Session = sessionmaker(bind=engine)
 session = Session()
 
 freshStart = False
-statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 1'
+statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 20'
 results = session.execute(statement).scalars().all()
+print('results length '+str(len(results)))
 most_recent_url = 'null'
 if len(results)>0:
     most_recent_url = results[0]
@@ -97,13 +98,13 @@ try:
                 urlFound = True
                 break
             else:
-                statement = 'DELETE FROM contents_content WHERE url = :val'
-                session.execute(statement, {'val':most_recent_url})
-                print('Deleted the orphan entry from db')
-                statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 1'
-                results = session.execute(statement).scalars().all()
+                # statement = 'DELETE FROM contents_content WHERE url = :val'
+                # session.execute(statement, {'val':most_recent_url})
+                # print('Deleted the orphan entry from db')
+                # statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 1'
+                # results = session.execute(statement).scalars().all()
                 if len(results)>0:
-                    most_recent_url = results[0]
+                    most_recent_url = results[checkCount]
                 else:
                     break
 
