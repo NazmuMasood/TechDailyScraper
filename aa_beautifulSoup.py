@@ -30,20 +30,22 @@ from connection import api_root_url
 
 results = []
 
-dataJson = requests.get(api_root_url+'contents/searchUrlByOwner&Limit/3/10').text
-data = json.loads(dataJson)
-for dataItem in data:
-    # print(dataItem['url'])
-    results.append(dataItem['url'])
+if api_root_url=='https://techdailyapi.herokuapp.com/':
+    dataJson = requests.get(api_root_url+'contents/searchUrlByOwner&Limit/3/10').text
+    data = json.loads(dataJson)
+    for dataItem in data:
+        # print(dataItem['url'])
+        results.append(dataItem['url'])
 
 ### Creating session to make db queries
-# Session = sessionmaker(bind=engine)
-# session = Session()
+if api_root_url=='http://127.0.0.1:8000':
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 3 ORDER BY id DESC LIMIT 10'
+    results = session.execute(statement).scalars().all()
 
-freshStart = False
-# statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 3 ORDER BY id DESC LIMIT 10'
-# results = session.execute(statement).scalars().all()
 print("Previous records' results[] length: "+str(len(results)))
+freshStart = False
 most_recent_url = 'null'
 if len(results)>0:
     most_recent_url = results[0]
@@ -215,29 +217,33 @@ for content in contentsRaw:
 
 print("Total "+str(len(contents))+" new content(s) found\n")
 
-# for content in reversed(contents):
-#     session.add(content)
-# session.commit()
-# session.close()
 
-contentDtos = []
-for content in reversed(contents):
-    contentDto = ContentDto(owner_id=content.owner_id, title=content.title, author=content.author, 
-                    url=content.url, img_url=content.img_url, pub_date=content.pub_date)
-    contentDtos.append(contentDto)
+if api_root_url=='http://127.0.0.1:8000':
+    for content in reversed(contents):
+        session.add(content)
+    session.commit()
+    session.close()
 
-json_payload = json.dumps([obj.__dict__ for obj in contentDtos], default=str)
-print('\nJSON to send:\n'+json_payload)
 
-if len(contentDtos)>0:
-    headers = {
-        'Content-Type': 'application/json'
-    }
-    url = api_root_url+'contents/createAll/'
-    response = requests.request("POST", url, headers=headers, data=json_payload)
-    
-    print("JSON response:\n"+response.text)
-    contents = json.loads(response.text)
-    print('\n'+str(len(contents))+' content(s) successfully created via API')
-    # for content in contents:
-    #     print(content['id'])
+if api_root_url=='https://techdailyapi.herokuapp.com/':
+    contentDtos = []
+    for content in reversed(contents):
+        contentDto = ContentDto(owner_id=content.owner_id, title=content.title, author=content.author, 
+                        url=content.url, img_url=content.img_url, pub_date=content.pub_date)
+        contentDtos.append(contentDto)
+
+    json_payload = json.dumps([obj.__dict__ for obj in contentDtos], default=str)
+    print('\nJSON to send:\n'+json_payload)
+
+    if len(contentDtos)>0:
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        url = api_root_url+'contents/createAll/'
+        response = requests.request("POST", url, headers=headers, data=json_payload)
+        
+        print("JSON response:\n"+response.text)
+        contents = json.loads(response.text)
+        print('\n'+str(len(contents))+' content(s) successfully created via API')
+        # for content in contents:
+        #     print(content['id'])

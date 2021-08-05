@@ -23,23 +23,27 @@ from connection import engine
 import requests
 import json
 from connection import api_root_url
+from webdriver_manager.chrome import ChromeDriverManager
+from bs4 import BeautifulSoup
 
 results = []
 
-dataJson = requests.get(api_root_url+'contents/searchUrlByOwner&Limit/1/15').text
-data = json.loads(dataJson)
-for dataItem in data:
-    # print(dataItem['url'])
-    results.append(dataItem['url'])
+if api_root_url=='https://techdailyapi.herokuapp.com/':
+    dataJson = requests.get(api_root_url+'contents/searchUrlByOwner&Limit/1/15').text
+    data = json.loads(dataJson)
+    for dataItem in data:
+        # print(dataItem['url'])
+        results.append(dataItem['url'])
 
 ### Creating session to make db queries
-# Session = sessionmaker(bind=engine)
-# session = Session()
+if api_root_url=='http://127.0.0.1:8000':
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 1 ORDER BY id DESC LIMIT 15'
+    results = session.execute(statement).scalars().all()
 
-freshStart = False
-# statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 1 ORDER BY id DESC LIMIT 15'
-# results = session.execute(statement).scalars().all()
 print("Previous records' results[] length: "+str(len(results)))
+freshStart = False
 most_recent_url = 'null'
 if len(results)>0:
     most_recent_url = results[0]
@@ -63,7 +67,8 @@ option.add_experimental_option("prefs", {
 })
 
 #Creating the driver
-driver = webdriver.Chrome(options=option, executable_path='./drivers/chromedriver.exe')
+# driver = webdriver.Chrome(options=option, executable_path='./drivers/chromedriver.exe')
+driver = webdriver.Chrome(ChromeDriverManager().install(), options=option)
 
 # --------!!!!!------ Populating techdaily_content table -------!!!!!!!!!--------
 owner_names = ['Cnet','Beebom', 'Android Authority']
@@ -164,20 +169,34 @@ if len(content_urls)>0:
     print("Fetching 'pub_date' datetime from each content's url...")
 
 fetchedAllDatetimes = True
-for content_url, index in zip(content_urls, range(len(content_pub_dates))):
-    driver.get(content_url)
-    print('Webpage title: '+driver.title)
+for content_url, index, imgIndex in zip(content_urls, range(len(content_pub_dates)), range(len(content_img_urls))):
+    # -- Fetch each content's pub_date datetime with selenium 
+    # driver.get(content_url)
+    # print('Webpage title: '+driver.title)
+    # try:
+    #     pub_dateDiv = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@class='c-assetAuthor_date']")))
+    #     pub_dateDatetime = pub_dateDiv.find_element_by_tag_name('time').get_attribute('datetime')
+    #     print("'pub_date' datetime found! : "+pub_dateDatetime+'\n')
+    #     content_pub_dates[index] = pub_dateDatetime
+    # except TimeoutException:
+    #     print("No 'pub_date' datetime present on current content_url")
+    #     fetchedAllDatetimes = false
+    #     break
 
-    try:
-        pub_dateDiv = WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.XPATH, "//div[@class='c-assetAuthor_date']")))
-        pub_dateDatetime = pub_dateDiv.find_element_by_tag_name('time').get_attribute('datetime')
-        print("'pub_date' datetime found! : "+pub_dateDatetime+'\n')
-        content_pub_dates[index] = pub_dateDatetime
+    # -- Fetch each content's pub_date datetime with beautifulSoup
+    html_text = requests.get(content_url).text
+    soup = BeautifulSoup(html_text, 'lxml')
+    pub_dateDiv = soup.find("div", {"class": "c-assetAuthor_date"})
+    pub_date = pub_dateDiv.find('time')['datetime']
+    print(pub_date)
+    content_pub_dates[index] = pub_date
 
-    except TimeoutException:
-        print("No 'pub_date' datetime present on current content_url")
-        fetchedAllDatetimes = false
-        break
+    # imgSpans = soup.findAll("span", {"class":"imageContainer"})
+    # if len(imgSpans)>0:
+    #     img_url = imgSpans[0].find('img')['src']
+    #     print(img_url)
+    #     content_img_urls[imgIndex] = img_url
+    # print('\n')
 
 driver.quit()
 
@@ -185,43 +204,44 @@ driver.quit()
 # -------------------------------------------------
 # --------------------------------------------
 
-# if fetchedAllDatetimes:
-#     for content_author, content_pub_date, content_title, content_url, content_img_url in zip(
-#             reversed(content_authors), reversed(content_pub_dates), reversed(content_titles), reversed(content_urls), reversed(content_img_urls)):
-#         content = Content()
-#         content.owner_id = owner_id
-#         content.title = content_title
-#         content.author = content_author
-#         content.url = content_url
-#         content.img_url = content_img_url
-#         content.pub_date = content_pub_date
-#         # print(Content.__repr__)
-#         session.add(content)
+if api_root_url=='http://127.0.0.1:8000':
+    if fetchedAllDatetimes:
+        for content_author, content_pub_date, content_title, content_url, content_img_url in zip(
+                reversed(content_authors), reversed(content_pub_dates), reversed(content_titles), reversed(content_urls), reversed(content_img_urls)):
+            content = Content()
+            content.owner_id = owner_id
+            content.title = content_title
+            content.author = content_author
+            content.url = content_url
+            content.img_url = content_img_url
+            content.pub_date = content_pub_date
+            # print(Content.__repr__)
+            session.add(content)
+        session.commit()
+    session.close()
 
-#     session.commit()
-# session.close()
+if api_root_url=='https://techdailyapi.herokuapp.com/':
+    if fetchedAllDatetimes:
+        contentDtos = []
+        for content_author, content_pub_date, content_title, content_url, content_img_url in zip(
+                reversed(content_authors), reversed(content_pub_dates), reversed(content_titles), reversed(content_urls), reversed(content_img_urls)):
+            contentDto = ContentDto(owner_id=owner_id, title=content_title, author=content_author, 
+                            url=content_url, img_url=content_img_url, pub_date=content_pub_date)
+            contentDtos.append(contentDto)
 
-if fetchedAllDatetimes:
-    contentDtos = []
-    for content_author, content_pub_date, content_title, content_url, content_img_url in zip(
-            reversed(content_authors), reversed(content_pub_dates), reversed(content_titles), reversed(content_urls), reversed(content_img_urls)):
-        contentDto = ContentDto(owner_id=owner_id, title=content_title, author=content_author, 
-                        url=content_url, img_url=content_img_url, pub_date=content_pub_date)
-        contentDtos.append(contentDto)
+        json_payload = json.dumps([obj.__dict__ for obj in contentDtos])
+        # print('\nJSON to send:\n'+json_payload)
 
-    json_payload = json.dumps([obj.__dict__ for obj in contentDtos])
-    # print('\nJSON to send:\n'+json_payload)
-
-    if len(contentDtos)>0:
-        headers = {
-            'Content-Type': 'application/json'
-        }
-        url = api_root_url+'contents/createAll/'
-        response = requests.request("POST", url, headers=headers, data=json_payload)
-        
-        print("JSON response:\n"+response.text)
-        contents = json.loads(response.text)
-        print('\n'+str(len(contents))+' content(s) successfully created via API')
-        # for content in contents:
-        #     print(content['id'])
-        #     print(content['url']+'\n')
+        if len(contentDtos)>0:
+            headers = {
+                'Content-Type': 'application/json'
+            }
+            url = api_root_url+'contents/createAll/'
+            response = requests.request("POST", url, headers=headers, data=json_payload)
+            
+            print("JSON response:\n"+response.text)
+            contents = json.loads(response.text)
+            print('\n'+str(len(contents))+' content(s) successfully created via API')
+            # for content in contents:
+            #     print(content['id'])
+            #     print(content['url']+'\n')
