@@ -10,6 +10,7 @@ from models import Owner, Content
 from connection import engine
 import json
 import requests
+from connection import api_root_url
 
 ### Db connection
 # engine = create_engine('mysql+mysqldb://root:@127.0.0.1:3306/techdaily', connect_args={"init_command": "SET SESSION time_zone='+00:00'"}, echo=True)
@@ -45,7 +46,7 @@ if len(ownerDtos)>0:
     headers = {
         'Content-Type': 'application/json'
     }
-    url = 'http://127.0.0.1:8000/owners/createAll/'
+    url = api_root_url+'owners/createAll/'
     response = requests.request("POST", url, headers=headers, data=json_payload)
     
     print("JSON response:\n"+response.text)

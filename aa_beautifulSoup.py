@@ -26,10 +26,11 @@ from bs4 import BeautifulSoup
 import requests
 import json
 import pytz
+from connection import api_root_url
 
 results = []
 
-dataJson = requests.get('http://127.0.0.1:8000/contents/searchUrlByOwner&Limit/3/10').text
+dataJson = requests.get(api_root_url+'contents/searchUrlByOwner&Limit/3/10').text
 data = json.loads(dataJson)
 for dataItem in data:
     # print(dataItem['url'])
@@ -232,7 +233,7 @@ if len(contentDtos)>0:
     headers = {
         'Content-Type': 'application/json'
     }
-    url = 'http://127.0.0.1:8000/contents/createAll/'
+    url = api_root_url+'contents/createAll/'
     response = requests.request("POST", url, headers=headers, data=json_payload)
     
     print("JSON response:\n"+response.text)
