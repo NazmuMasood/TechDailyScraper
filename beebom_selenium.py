@@ -1,7 +1,8 @@
+from dtos import ContentDto
 from sqlalchemy import create_engine, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.expression import null
-from sqlalchemy.sql.schema import Column, ForeignKey, Sequence
+from sqlalchemy.sql.schema import Column, Constraint, ForeignKey, Sequence
 from sqlalchemy.sql.sqltypes import DateTime, Integer, String
 from sqlalchemy.sql import func
 from sqlalchemy.orm import sessionmaker
@@ -19,14 +20,26 @@ import os
 import time, datetime
 from models import Owner, Content
 from connection import engine
+import requests
+import json
+
+results = []
+
+dataJson = requests.get('http://127.0.0.1:8000/contents/searchUrlByOwner&Limit/2/20').text
+data = json.loads(dataJson)
+for dataItem in data:
+    # print(dataItem['url'])
+    results.append(dataItem['url'])
+
+# raise ValueError('A very specific bad thing happened.')
 
 ### Creating session to make db queries
-Session = sessionmaker(bind=engine)
-session = Session()
+# Session = sessionmaker(bind=engine)
+# session = Session()
 
 freshStart = False
-statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 20'
-results = session.execute(statement).scalars().all()
+# statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 2 ORDER BY id DESC LIMIT 20'
+# results = session.execute(statement).scalars().all()
 print("Previous records' results[] length: "+str(len(results)))
 most_recent_url = 'null'
 if len(results)>0:
@@ -94,7 +107,7 @@ try:
             print('\nChecking for most recent url:\n'+most_recent_url)
             targetElem = driver.find_elements_by_xpath(".//a[contains(@href,'"+most_recent_url+"')]")
             if(len(targetElem)>0):
-                print("Most recent url found in page, saving contents until that...\n")
+                print("\n"+"Most recent url found in page, saving contents until that...\n")
                 urlFound = True
                 break
             else:
@@ -153,17 +166,41 @@ print("Total "+str(len(content_urls))+" new content(s) found\n")
 # -------------------------------------------------
 # --------------------------------------------
 
+# for content_author, content_pub_date, content_title, content_url, content_img_url in zip(
+#         reversed(content_authors), reversed(content_pub_dates), reversed(content_titles), reversed(content_urls), reversed(content_img_urls)):
+#     content = Content()
+#     content.owner_id = owner_id
+#     content.title = content_title
+#     content.author = content_author
+#     content.url = content_url
+#     content.img_url = content_img_url
+#     content.pub_date = content_pub_date
+    # # print(Content.__repr__)
+    # session.add(content)
+
+# session.commit()
+# session.close()
+
+contentDtos = []
 for content_author, content_pub_date, content_title, content_url, content_img_url in zip(
         reversed(content_authors), reversed(content_pub_dates), reversed(content_titles), reversed(content_urls), reversed(content_img_urls)):
-    content = Content()
-    content.owner_id = owner_id
-    content.title = content_title
-    content.author = content_author
-    content.url = content_url
-    content.img_url = content_img_url
-    content.pub_date = content_pub_date
-    # print(Content.__repr__)
-    session.add(content)
+    contentDto = ContentDto(owner_id=owner_id, title=content_title, author=content_author, 
+                    url=content_url, img_url=content_img_url, pub_date=content_pub_date)
+    contentDtos.append(contentDto)
 
-session.commit()
-session.close()
+json_payload = json.dumps([obj.__dict__ for obj in contentDtos])
+# print('\nJSON to send:\n'+json_payload)
+
+if len(contentDtos)>0:
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    url = 'http://127.0.0.1:8000/contents/createAll/'
+    response = requests.request("POST", url, headers=headers, data=json_payload)
+    
+    print("JSON response:\n"+response.text)
+    contents = json.loads(response.text)
+    print('\n'+str(len(contents))+' content(s) successfully created via API')
+    # for content in contents:
+    #     print(content['id'])
+    #     print(content['url']+'\n')

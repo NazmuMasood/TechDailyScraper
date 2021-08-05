@@ -28,7 +28,9 @@ class Content(Base):
 
     id = Column(Integer, primary_key=True)
     owner_id = Column(Integer, ForeignKey('owners_owner.id', ondelete="CASCADE"))
-    url =  Column(String(300), nullable=False, unique=True)
+    url =  Column(String(300), nullable=False, 
+    # unique=True
+    )
     title = Column(String(200), nullable=False)
     author = Column(String(200), nullable=True)
     pub_date = Column(String(50), nullable=True)

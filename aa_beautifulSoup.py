@@ -1,3 +1,4 @@
+from dtos import ContentDto
 from sqlalchemy import create_engine, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.expression import null
@@ -22,14 +23,25 @@ from connection import engine
 import requests
 from datetime import datetime, timedelta
 from bs4 import BeautifulSoup
+import requests
+import json
+import pytz
+
+results = []
+
+dataJson = requests.get('http://127.0.0.1:8000/contents/searchUrlByOwner&Limit/3/10').text
+data = json.loads(dataJson)
+for dataItem in data:
+    # print(dataItem['url'])
+    results.append(dataItem['url'])
 
 ### Creating session to make db queries
-Session = sessionmaker(bind=engine)
-session = Session()
+# Session = sessionmaker(bind=engine)
+# session = Session()
 
 freshStart = False
-statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 3 ORDER BY id DESC LIMIT 10'
-results = session.execute(statement).scalars().all()
+# statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 3 ORDER BY id DESC LIMIT 10'
+# results = session.execute(statement).scalars().all()
 print("Previous records' results[] length: "+str(len(results)))
 most_recent_url = 'null'
 if len(results)>0:
@@ -69,12 +81,14 @@ def fetchContentPubDate(url):
         d = currentTime - timedelta(hours=timeUnitCount, minutes=0)
     if unitOfTime=='m':
         d = currentTime - timedelta(hours=0, minutes=timeUnitCount)
+    if unitOfTime=='s':
+        d = currentTime
     # print(d.strftime("%Y-%m-%d %H:%M:%S")+'\n')
 
     return d
 
 # ----- ***** ----- Getting all contents with beautifulSoup
-currentTime = datetime.today()
+currentTime = datetime.now().astimezone()
 html_text = requests.get(root_url+'/news').text
 soup = BeautifulSoup(html_text, 'lxml')
 
@@ -136,7 +150,7 @@ for list in lists:
     print(root_url+listHref['href'])
     print(listAuthor[3:])
     print(listHref.img['src']) 
-    print(listPubDate+'\n')
+    print(listPubDate)
     
     timeUnitCount = int(listPubDate.split()[0])
     unitOfTime = listPubDate.split()[1][0:1]
@@ -145,7 +159,11 @@ for list in lists:
         d = currentTime - timedelta(hours=timeUnitCount, minutes=0)
     if unitOfTime=='m':
         d = currentTime - timedelta(hours=0, minutes=timeUnitCount)
-    print(d.strftime("%Y-%m-%d %H:%M:%S")+'\n')
+    if unitOfTime=='s':
+        d = currentTime
+    # print(d.strftime("%Y-%m-%d %H:%M:%S")+'\n')
+    print(d)
+    print('\n')
 
     content = Content()
     content.owner_id = owner_id
@@ -194,10 +212,31 @@ for content in contentsRaw:
         break
     contents.append(content)
 
-for content in reversed(contents):
-    session.add(content)
-
 print("Total "+str(len(contents))+" new content(s) found\n")
 
-session.commit()
-session.close()
+# for content in reversed(contents):
+#     session.add(content)
+# session.commit()
+# session.close()
+
+contentDtos = []
+for content in reversed(contents):
+    contentDto = ContentDto(owner_id=content.owner_id, title=content.title, author=content.author, 
+                    url=content.url, img_url=content.img_url, pub_date=content.pub_date)
+    contentDtos.append(contentDto)
+
+json_payload = json.dumps([obj.__dict__ for obj in contentDtos], default=str)
+print('\nJSON to send:\n'+json_payload)
+
+if len(contentDtos)>0:
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    url = 'http://127.0.0.1:8000/contents/createAll/'
+    response = requests.request("POST", url, headers=headers, data=json_payload)
+    
+    print("JSON response:\n"+response.text)
+    contents = json.loads(response.text)
+    print('\n'+str(len(contents))+' content(s) successfully created via API')
+    # for content in contents:
+    #     print(content['id'])

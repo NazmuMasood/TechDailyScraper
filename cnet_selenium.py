@@ -1,3 +1,4 @@
+from dtos import ContentDto
 from sqlalchemy import create_engine, select
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.sql.expression import false, null
@@ -19,14 +20,24 @@ import os
 import time, datetime
 from models import Owner, Content
 from connection import engine
+import requests
+import json
+
+results = []
+
+dataJson = requests.get('http://127.0.0.1:8000/contents/searchUrlByOwner&Limit/1/15').text
+data = json.loads(dataJson)
+for dataItem in data:
+    # print(dataItem['url'])
+    results.append(dataItem['url'])
 
 ### Creating session to make db queries
-Session = sessionmaker(bind=engine)
-session = Session()
+# Session = sessionmaker(bind=engine)
+# session = Session()
 
 freshStart = False
-statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 1 ORDER BY id DESC LIMIT 15'
-results = session.execute(statement).scalars().all()
+# statement = 'SELECT contents_content.url FROM contents_content WHERE owner_id = 1 ORDER BY id DESC LIMIT 15'
+# results = session.execute(statement).scalars().all()
 print("Previous records' results[] length: "+str(len(results)))
 most_recent_url = 'null'
 if len(results)>0:
@@ -70,6 +81,7 @@ owner_id = owner_ids[cnet]
 root_url = owner_urls[cnet]
 driver.get(root_url+"/news")
 print('\nWebpage title: '+driver.title)
+time.sleep(5)
 
 try:
     # Navigating to the 'Latest News' column
@@ -172,18 +184,43 @@ driver.quit()
 # -------------------------------------------------
 # --------------------------------------------
 
+# if fetchedAllDatetimes:
+#     for content_author, content_pub_date, content_title, content_url, content_img_url in zip(
+#             reversed(content_authors), reversed(content_pub_dates), reversed(content_titles), reversed(content_urls), reversed(content_img_urls)):
+#         content = Content()
+#         content.owner_id = owner_id
+#         content.title = content_title
+#         content.author = content_author
+#         content.url = content_url
+#         content.img_url = content_img_url
+#         content.pub_date = content_pub_date
+#         # print(Content.__repr__)
+#         session.add(content)
+
+#     session.commit()
+# session.close()
+
 if fetchedAllDatetimes:
+    contentDtos = []
     for content_author, content_pub_date, content_title, content_url, content_img_url in zip(
             reversed(content_authors), reversed(content_pub_dates), reversed(content_titles), reversed(content_urls), reversed(content_img_urls)):
-        content = Content()
-        content.owner_id = owner_id
-        content.title = content_title
-        content.author = content_author
-        content.url = content_url
-        content.img_url = content_img_url
-        content.pub_date = content_pub_date
-        # print(Content.__repr__)
-        session.add(content)
+        contentDto = ContentDto(owner_id=owner_id, title=content_title, author=content_author, 
+                        url=content_url, img_url=content_img_url, pub_date=content_pub_date)
+        contentDtos.append(contentDto)
 
-    session.commit()
-session.close()
+    json_payload = json.dumps([obj.__dict__ for obj in contentDtos])
+    # print('\nJSON to send:\n'+json_payload)
+
+    if len(contentDtos)>0:
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        url = 'http://127.0.0.1:8000/contents/createAll/'
+        response = requests.request("POST", url, headers=headers, data=json_payload)
+        
+        print("JSON response:\n"+response.text)
+        contents = json.loads(response.text)
+        print('\n'+str(len(contents))+' content(s) successfully created via API')
+        # for content in contents:
+        #     print(content['id'])
+        #     print(content['url']+'\n')
